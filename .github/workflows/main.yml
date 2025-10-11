@@ -1,0 +1,32 @@
+name: Double Contributions
+
+on:
+  workflow_dispatch:
+
+jobs:
+  double-contrib:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} repo
+          cd repo
+
+      - name: Rewrite commits to generate new SHAs
+        run: |
+          cd repo
+          git filter-branch -f --commit-filter '
+            git commit-tree "$@" 
+          ' -- --all
+
+      - name: Force push rewritten history
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd repo
+          git remote remove origin
+          git remote add origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+          git push --all --force
+          git push --tags --force
